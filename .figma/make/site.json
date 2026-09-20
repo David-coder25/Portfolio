@@ -1,0 +1,10 @@
+{
+  "description": "Showcases a professional full-stack developer's expertise, projects, and approach through a premium, interactive, and visually sophisticated portfolio.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
