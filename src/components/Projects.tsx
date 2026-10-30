@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useInView } from '../hooks/useInView';
 
 interface Project {
@@ -13,6 +13,7 @@ interface Project {
   engineering: string;
   color: string;
   accentColor: string;
+  images: string[];
   status?: string;
 }
 
@@ -40,6 +41,7 @@ const PROJECTS: Project[] = [
       'The offline-first architecture required careful conflict resolution for data sync. Database-driven transaction tracking records inspection user, timestamp, location, and status. Firebase Cloud Messaging handles automated notifications.',
     color: 'rgba(56,189,248,0.08)',
     accentColor: '#38bdf8',
+    images: Array.from({ length: 7 }, (_, index) => `/iog/${index + 1}.JPG`),
   },
   {
     id: 'harpa',
@@ -64,6 +66,7 @@ const PROJECTS: Project[] = [
       'Complex approval workflows required careful state management and transaction-safe database operations using PostgreSQL with ORM-based data access. The system handles multi-step business logic with strict data consistency requirements across related entities.',
     color: 'rgba(99,102,241,0.08)',
     accentColor: '#6366f1',
+    images: Array.from({ length: 3 }, (_, index) => `/harpa/${index + 1}.JPG`),
   },
   {
     id: 'target-erp',
@@ -87,6 +90,7 @@ const PROJECTS: Project[] = [
       'Leverages Microsoft SQL Server as the relational data layer, applying the same patterns of structured API design, business logic encapsulation, and maintainable component architecture developed across HARPA and TIOG.',
     color: 'rgba(52,211,153,0.06)',
     accentColor: '#34d399',
+    images: Array.from({ length: 3 }, (_, index) => `/erp/${index + 1}.JPG`),
     status: 'In Progress',
   },
 ];
@@ -134,7 +138,7 @@ function ProjectCard({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={onOpen}
-      onKeyDown={e => e.key === 'Enter' && onOpen()}
+      onKeyDown={e => e.target === e.currentTarget && e.key === 'Enter' && onOpen()}
       tabIndex={0}
       role="button"
       aria-label={`View ${project.name} project details`}
@@ -152,8 +156,7 @@ function ProjectCard({
           justifyContent: 'center',
         }}
       >
-        {/* Abstract tech visual */}
-        <ProjectVisual project={project} />
+        <ProjectCarousel project={project} staggerIndex={index} />
       </div>
 
       {/* Card content */}
@@ -227,6 +230,71 @@ function ProjectCard({
           </svg>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ProjectCarousel({ project, staggerIndex }: { project: Project; staggerIndex: number }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (project.images.length < 2 || isHovered) return;
+
+    const advanceImage = () => {
+      setActiveIndex(index => (index + 1) % project.images.length);
+    };
+    let intervalRef: number | undefined;
+    const initialTimeoutId = window.setTimeout(() => {
+      advanceImage();
+      const intervalId = window.setInterval(advanceImage, 3000);
+      intervalRef = intervalId;
+    }, 3000 + staggerIndex * 900);
+
+    return () => {
+      window.clearTimeout(initialTimeoutId);
+      if (intervalRef !== undefined) window.clearInterval(intervalRef);
+    };
+  }, [isHovered, project.images.length, staggerIndex]);
+
+  return (
+    <div
+      role="group"
+      aria-label={`${project.name} screenshots`}
+      style={{ position: 'relative', width: '100%', height: '100%', background: '#080b14' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <img
+        key={project.images[activeIndex]}
+        src={project.images[activeIndex]}
+        alt={`${project.name} screenshot ${activeIndex + 1}`}
+        draggable={false}
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          animation: 'fadeInUp 0.45s ease-out',
+        }}
+      />
+      {project.images.length > 1 && (
+        <div
+          className="font-mono-code"
+          style={{
+            position: 'absolute',
+            right: '12px',
+            bottom: '10px',
+            padding: '4px 7px',
+            borderRadius: '5px',
+            background: 'rgba(6,8,15,0.75)',
+            color: '#eef0f8',
+            fontSize: '10px',
+          }}
+        >
+          {String(activeIndex + 1).padStart(2, '0')} / {String(project.images.length).padStart(2, '0')}
+        </div>
+      )}
     </div>
   );
 }
@@ -389,7 +457,7 @@ function ProjectModal({ project, onClose }: { project: Project; onClose: () => v
             justifyContent: 'center',
           }}
         >
-          <ProjectVisual project={project} />
+          <ProjectCarousel project={project} staggerIndex={PROJECTS.findIndex(item => item.id === project.id)} />
           <button
             onClick={onClose}
             className="absolute top-4 right-4"
